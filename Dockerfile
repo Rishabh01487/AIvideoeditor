@@ -65,8 +65,8 @@ RUN mkdir -p /etc/nginx/conf.d
 COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
 
 # Copy entrypoint
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
 
 # Setup directories
 RUN mkdir -p /tmp/ai_video_editor /app/temp /app/ai_engine/models
@@ -83,4 +83,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD curl -f http://localhost:${PORT:-8000}/health || exit 1
 
 # Start services
-ENTRYPOINT ["/entrypoint.sh"]
+ENTRYPOINT ["/app/entrypoint.sh"]
