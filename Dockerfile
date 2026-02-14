@@ -73,7 +73,7 @@ RUN mkdir -p /tmp/ai_video_editor /app/temp /app/ai_engine/models
 
 # Environment variables
 ENV PYTHONUNBUFFERED=1
-ENV PYTHONPATH=/app:$PYTHONPATH
+ENV PYTHONPATH=/app:/app/backend:$PYTHONPATH
 ENV PORT=8000
 
 EXPOSE 8000 80 443
