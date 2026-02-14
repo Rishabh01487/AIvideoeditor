@@ -56,11 +56,13 @@ ENV PATH=/root/.local/bin:$PATH
 COPY backend ./backend
 COPY .env.example .env.example
 
-# Copy frontend build from builder
-COPY --from=builder /app/frontend/build ./frontend/build 2>/dev/null || echo "Frontend build directory not found"
+# Copy frontend build from builder (if exists)
+RUN mkdir -p ./frontend/build
+COPY --from=builder /app/frontend/build ./frontend/build
 
-# Copy nginx config
-COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf 2>/dev/null || echo "Nginx config not found"
+# Copy nginx config (if exists)
+RUN mkdir -p /etc/nginx/conf.d
+COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
 
 # Copy entrypoint
 COPY entrypoint.sh /entrypoint.sh
