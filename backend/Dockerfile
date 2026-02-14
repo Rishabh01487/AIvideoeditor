@@ -3,7 +3,8 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install system dependencies for OpenCV and AI libraries
+# Install system dependencies - using packages available in Debian Trixie
+# Free from deprecated packages like libgl1-mesa-glx
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libgl1 \
     libglib2.0-0 \
@@ -12,17 +13,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxrender1 \
     ffmpeg \
     curl \
+    ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 # Upgrade pip
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel
 
-# Install Python dependencies
-COPY requirements.txt .
+# Copy requirements from backend folder
+COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
-COPY . .
+# Copy backend application code
+COPY backend ./
 
 # Create necessary directories
 RUN mkdir -p temp ai_engine/models ai_engine/assets
@@ -30,6 +32,7 @@ RUN mkdir -p temp ai_engine/models ai_engine/assets
 # Set Python path
 ENV PYTHONPATH=/app:$PYTHONPATH
 ENV PYTHONUNBUFFERED=1
+ENV PORT=8000
 
 # Expose port
 EXPOSE 8000
