@@ -1,0 +1,80 @@
+# Dependencies and virtual environment
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+venv/
+env/
+ENV/
+.venv
+node_modules/
+.npm
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.iml
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+logs/
+celerybeat-schedule
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+postgres_data/
+minio_data/
+
+# Temp files
+/tmp/
+*.tmp
+*.temp
+
+# OS
+.DS_Store
+Thumbs.db
+.AppleDouble
+.LSOverride
+
+# Build artifacts
+dist/
+build/
+*.egg-info
+
+# Code coverage
+.coverage
+htmlcov/
+
+# Pytest
+.pytest_cache/
+
+# Frontend
+frontend/build/
+frontend/.env.local
+frontend/.env.*.local
+
+# AWS/S3
+.aws/
+.s3cfg
+
+# Docker
+.docker
+docker-credentials
+
+# Temporary Claude Code working directories
+tmpclaude-*/

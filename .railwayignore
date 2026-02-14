@@ -1,0 +1,70 @@
+# Railway Ignore - Files not to deploy
+
+# Node modules (handled by npm install)
+node_modules/
+npm-debug.log
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment files - use .env in Railway dashboard instead
+.env
+.env.local
+.env.*.local
+
+# Temporary directories
+tmp/
+temp/
+.tmp/
+tmpclaude*/
+
+# Documentation (Railway shows these but doesn't deploy)
+*.md
+
+# Testing files
+*.test.js
+*.spec.js
+test/
+tests/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Misc
+*.log
+.env.*.backup

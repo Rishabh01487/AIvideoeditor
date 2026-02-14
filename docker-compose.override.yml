@@ -1,0 +1,32 @@
+# Local Development Override
+# This file extends docker-compose.yml for local development
+
+version: '3.9'
+
+services:
+  backend:
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - /tmp/ai_video_editor:/tmp/ai_video_editor
+    environment:
+      DEBUG: "True"
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  worker:
+    volumes:
+      - ./backend:/app
+      - /tmp/ai_video_editor:/tmp/ai_video_editor
+    environment:
+      DEBUG: "True"
+
+  frontend:
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+    environment:
+      - REACT_APP_API_URL=http://localhost:8000
+      - WDS_SOCKET_HOST=localhost
+      - WDS_SOCKET_PORT=3000
+      - WDS_SOCKET_PATH=/ws

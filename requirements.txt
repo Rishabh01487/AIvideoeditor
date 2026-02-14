@@ -1,0 +1,2 @@
+# Placeholder requirements file for Railway detection
+# Actual dependencies are in backend/requirements.txt
