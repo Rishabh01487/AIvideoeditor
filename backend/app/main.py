@@ -89,12 +89,17 @@ async def startup_event():
     logger.info(f"Starting {settings.APP_NAME} v{settings.APP_VERSION}")
     logger.info(f"Environment: {settings.ENV}")
     
+    # Database init is non-blocking - continues even if it fails
     try:
         from app.database import init_db
-        init_db()
+        # Run in executor to avoid blocking async event loop
+        import asyncio
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(None, init_db)
         logger.info("✓ Database initialized")
     except Exception as e:
-        logger.warning(f"⚠️ Database init warning: {e}")
+        logger.warning(f"⚠️ Database init warning (app continues): {e}")
+        # App will still respond to /health even if DB init fails
 
 @app.on_event("shutdown")
 async def shutdown_event():
