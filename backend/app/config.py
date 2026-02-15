@@ -81,13 +81,6 @@ class Settings(BaseSettings):
         
         # Ensure temporary directory exists
         os.makedirs(self.TEMP_DIR, exist_ok=True)
-        
-        # Validate critical settings for production
-        if self.ENV == "production":
-            if not self.SECRET_KEY or self.SECRET_KEY == "change-me-in-production":
-                logger.warning("SECRET_KEY not set for production!")
-            if self.DEBUG:
-                logger.warning("DEBUG mode enabled in production!")
 
 
 # Create settings instance
