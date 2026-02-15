@@ -65,7 +65,7 @@ class Asset(Base):
     duration = Column(Float, nullable=True)  # in seconds, for videos
     width = Column(Integer, nullable=True)
     height = Column(Integer, nullable=True)
-    metadata = Column(JSON, nullable=True)  # stores analysis results
+    analysis_metadata = Column(JSON, nullable=True)  # stores analysis results
     file_size = Column(Integer, nullable=True)  # in bytes
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

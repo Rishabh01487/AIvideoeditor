@@ -1,84 +1,72 @@
 """Main FastAPI application entry point"""
 import logging
 import os
-import sys
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Create FastAPI app IMMEDIATELY - this must not fail
+# Load settings
 try:
-    from fastapi import FastAPI
-    from fastapi.middleware.cors import CORSMiddleware
-    
-    app = FastAPI(
-        title="AI Video Editor",
-        version="1.0.0",
-        description="AI-powered video editing platform",
-        docs_url="/api/docs",
-        openapi_url="/api/openapi.json"
-    )
-    logger.info("✓ FastAPI app created")
+    from app.config import settings
 except Exception as e:
-    logger.error(f"✗ Failed to create FastAPI app: {e}")
-    sys.exit(1)
+    logger.error(f"Failed to load settings: {e}")
+    raise
+
+# Create FastAPI app
+app = FastAPI(
+    title=settings.APP_NAME,
+    version=settings.APP_VERSION,
+    description="AI-powered video editing platform API",
+    docs_url="/api/docs",
+    openapi_url="/api/openapi.json"
+)
 
 # Add CORS middleware
-try:
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["*"],  # Allow all for simplicity
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
-    logger.info("✓ CORS middleware added")
-except Exception as e:
-    logger.error(f"✗ Failed to add CORS: {e}")
+cors_origins = settings.CORS_ORIGINS
+if "*" not in cors_origins and os.getenv("ENV") != "production":
+    cors_origins.extend(["http://localhost:3000", "http://localhost:80"])
 
-# Health check endpoints - MUST respond immediately
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=cors_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Health endpoints - MUST work before anything else
 @app.get("/health")
 async def health_check():
-    """Health check - always responds with 200"""
-    return {"status": "healthy", "app": "AI Video Editor"}
+    """Health check endpoint"""
+    return {
+        "status": "healthy",
+        "app": settings.APP_NAME,
+        "version": settings.APP_VERSION
+    }
 
 @app.get("/api/health")
-async def api_health():
-    """API health check"""
-    return {"status": "ok", "service": "api"}
+async def api_health_check():
+    """API health check endpoint"""
+    return {
+        "status": "ok",
+        "service": "api",
+        "environment": settings.ENV
+    }
 
 @app.get("/")
 async def root():
     """Root endpoint"""
-    return {"app": "AI Video Editor", "status": "running"}
+    return {
+        "app": settings.APP_NAME,
+        "version": settings.APP_VERSION,
+        "status": "running",
+        "docs": "/api/docs"
+    }
 
-logger.info("✓ Health endpoints registered")
-
-# Initialize database on startup (non-blocking)
-@app.on_event("startup")
-async def startup_event():
-    """Initialize on startup - gracefully handle failures"""
-    logger.info("🚀 App startup event triggered")
-    
-    try:
-        # Import settings
-        from app.config import settings
-        logger.info(f"✓ Settings loaded: ENV={settings.ENV}, DEBUG={settings.DEBUG}")
-    except Exception as e:
-        logger.warning(f"⚠️ Settings load warning: {e}")
-        return
-    
-    try:
-        # Try to initialize database, but don't fail startup
-        from app.database import init_db
-        init_db()
-        logger.info("✓ Database initialized")
-    except Exception as e:
-        logger.warning(f"⚠️ Database init warning (will retry on first request): {e}")
-        # Don't fail - let first API call trigger initialization
-
-# Load routers on startup (after health endpoints are ready)
+# Load routers
 try:
     from app.auth.routes import router as auth_router
     from app.projects.routes import router as projects_router
@@ -91,19 +79,36 @@ try:
     app.include_router(jobs_router, prefix="/api/jobs", tags=["jobs"])
     logger.info("✓ All routers loaded")
 except Exception as e:
-    logger.warning(f"⚠️ Router load warning: {e}")
-    # App still runs with just health endpoints
+    logger.error(f"Failed to load routers: {e}")
+    raise
+
+# Initialize database on startup
+@app.on_event("startup")
+async def startup_event():
+    """Run on application startup"""
+    logger.info(f"Starting {settings.APP_NAME} v{settings.APP_VERSION}")
+    logger.info(f"Environment: {settings.ENV}")
+    
+    try:
+        from app.database import init_db
+        init_db()
+        logger.info("✓ Database initialized")
+    except Exception as e:
+        logger.warning(f"⚠️ Database init warning: {e}")
 
 @app.on_event("shutdown")
 async def shutdown_event():
-    """Cleanup on shutdown"""
-    logger.info("🛑 App shutting down")
+    """Run on application shutdown"""
+    logger.info(f"Shutting down {settings.APP_NAME}")
+
 
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(
         "app.main:app",
         host="0.0.0.0",
-        port=int(os.getenv("PORT", 8000)),
+        port=settings.PORT,
+        reload=settings.DEBUG,
+        workers=1 if settings.DEBUG else settings.WORKERS,
         log_level="info"
     )

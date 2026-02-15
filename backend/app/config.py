@@ -24,7 +24,10 @@ class Settings(BaseSettings):
     )
 
     # JWT
-    SECRET_KEY: str = Field(default="change-me-in-production", alias="SECRET_KEY")
+    SECRET_KEY: str = Field(
+        default="dev-secret-key-change-in-production-minimum-32-chars-",
+        alias="SECRET_KEY"
+    )
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 

@@ -39,7 +39,7 @@ class AssetUpdate(BaseModel):
     duration: Optional[float] = None
     width: Optional[int] = None
     height: Optional[int] = None
-    metadata: Optional[dict] = None
+    analysis_metadata: Optional[dict] = None
 
 
 class AssetResponse(AssetBase):
@@ -49,7 +49,7 @@ class AssetResponse(AssetBase):
     duration: Optional[float]
     width: Optional[int]
     height: Optional[int]
-    metadata: Optional[dict]
+    analysis_metadata: Optional[dict]
     file_size: Optional[int]
     created_at: datetime
 
