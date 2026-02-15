@@ -2,21 +2,31 @@
 # Uses Python 3.11-slim for minimal image size
 # Multi-stage build: compile > minimal runtime
 
+# Cache buster - RANDOM BUILD ID
+ARG BUILD_ID=BUILD-2026-2-15-FIXED-EMAIL-VALIDATOR
+LABEL build.id=$BUILD_ID
+
 # Stage 1: Build stage
 FROM python:3.11-slim AS builder
 
 WORKDIR /app
 
-# Install only build dependencies needed
+# Install build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     git \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies
-COPY backend/requirements.txt ./requirements.txt
-RUN pip install --user --no-cache-dir -r requirements.txt
+# Copy requirements FIRST
+COPY backend/requirements.txt ./
+
+# Install Python dependencies - FORCE FRESH INSTALL
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --user --force-reinstall --no-cache-dir pydantic[email]==2.5.2 && \
+    pip install --user --no-cache-dir -r requirements.txt && \
+    python3 -c "from email_validator import validate_email; print('✓ Email validator working')" && \
+    python3 -c "from pydantic import EmailStr; print('✓ Pydantic EmailStr working')"
 
 # Build frontend if exists
 RUN apt-get update && apt-get install -y --no-install-recommends \
