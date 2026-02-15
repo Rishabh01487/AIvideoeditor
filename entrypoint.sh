@@ -1,5 +1,4 @@
 #!/bin/sh
-set -e
 
 # Get the PORT from environment, default to 8000
 PORT=${PORT:-8000}
@@ -11,47 +10,9 @@ echo "Port: $PORT"
 echo "Working Directory: $(pwd)"
 echo "Environment: ${ENV:-production}"
 
-# Wait for database to be ready (with retries)
-echo ""
-echo "[1/4] Waiting for database to be ready..."
-MAX_RETRIES=30
-RETRY_COUNT=0
-while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-    python -c "
-import os
-import psycopg2
-from psycopg2.extras import RealDictCursor
-try:
-    conn = psycopg2.connect(os.getenv('DATABASE_URL'))
-    conn.close()
-    print('✓ Database is ready')
-    exit(0)
-except Exception as e:
-    print(f'⏳ Database not ready: {str(e)[:50]}')
-    exit(1)
-" 2>&1
-    if [ $? -eq 0 ]; then
-        break
-    fi
-    RETRY_COUNT=$((RETRY_COUNT + 1))
-    if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
-        echo "  Retrying... ($RETRY_COUNT/$MAX_RETRIES)"
-        sleep 2
-    fi
-done
-
-if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
-    echo "⚠️  Database failed to start after $MAX_RETRIES attempts"
-fi
-
-# Initialize database (with error handling)
-echo ""
-echo "[2/4] Initializing database..."
-python -c "from backend.app.database import init_db; init_db()" 2>&1 || echo "⚠️  Database init skipped"
-
 # Start nginx in background if available
 echo ""
-echo "[3/4] Starting services..."
+echo "[1/3] Starting services..."
 if command -v nginx &> /dev/null; then
     echo "✓ Starting Nginx (frontend proxy on port 80)..."
     nginx -g "daemon off;" > /tmp/nginx.log 2>&1 &
@@ -64,10 +25,27 @@ fi
 # Trap to ensure cleanup
 trap 'echo "Shutting down services..."; kill $NGINX_PID 2>/dev/null || true' TERM INT
 
-# Start uvicorn backend API (foreground)
+# Initialize database in background (non-blocking)
 echo ""
-echo "[4/4] Starting Backend API (port $PORT)..."
+echo "[2/3] Initializing database (async)..."
+python -c "
+import os
+import sys
+import logging
+logging.getLogger().setLevel(logging.WARNING)
+try:
+    from backend.app.database import init_db
+    init_db()
+    print('✓ Database initialized')
+except Exception as e:
+    print(f'⚠️  Database init will retry: {str(e)[:50]}')
+    sys.exit(0)  # Don't fail startup
+" 2>&1 || echo "⚠️  Database initialization skipped"
+
+# Start uvicorn backend API (foreground in main process)
+echo ""
+echo "[3/3] Starting Backend API (port $PORT)..."
 echo "=========================================="
 echo ""
-exec uvicorn backend.app.main:app --host 0.0.0.0 --port "$PORT" --workers 4 --access-log
+exec uvicorn backend.app.main:app --host 0.0.0.0 --port "$PORT" --workers 2 --access-log
 

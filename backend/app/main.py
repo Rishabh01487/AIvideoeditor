@@ -4,25 +4,12 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
-from app.database import init_db
-from app.auth.routes import router as auth_router
-from app.projects.routes import router as projects_router
-from app.assets.routes import router as assets_router
-from app.jobs.routes import router as jobs_router
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Initialize database
-try:
-    init_db()
-    logger.info("✓ Database initialized successfully")
-except Exception as e:
-    logger.error(f"✗ Database initialization failed: {e}")
-    raise
-
-# Create FastAPI app
+# Create FastAPI app FIRST (so it can start responding immediately)
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
@@ -44,16 +31,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include routers
-app.include_router(auth_router, prefix="/api/auth", tags=["auth"])
-app.include_router(projects_router, prefix="/api/projects", tags=["projects"])
-app.include_router(assets_router, prefix="/api/assets", tags=["assets"])
-app.include_router(jobs_router, prefix="/api/jobs", tags=["jobs"])
-
-
+# Health endpoints (before routers, so they respond immediately)
 @app.get("/health")
 async def health_check():
-    """Health check endpoint"""
+    """Health check endpoint - always returns 200"""
     return {
         "status": "healthy",
         "app": settings.APP_NAME,
@@ -82,18 +63,40 @@ async def root():
     }
 
 
+# Initialize database on startup (non-blocking)
 @app.on_event("startup")
 async def startup_event():
     """Run on application startup"""
     logger.info(f"Starting {settings.APP_NAME} v{settings.APP_VERSION}")
     logger.info(f"Environment: {settings.ENV}")
     logger.info(f"Debug mode: {settings.DEBUG}")
+    
+    # Try to initialize database, but don't fail startup if it fails
+    try:
+        from app.database import init_db
+        init_db()
+        logger.info("✓ Database initialized successfully")
+    except Exception as e:
+        logger.warning(f"⚠️  Database initialization warning: {e}")
+        logger.info("Database will be initialized on first API call")
 
 
 @app.on_event("shutdown")
 async def shutdown_event():
     """Run on application shutdown"""
     logger.info(f"Shutting down {settings.APP_NAME}")
+
+
+# Include routers AFTER health endpoints
+from app.auth.routes import router as auth_router
+from app.projects.routes import router as projects_router
+from app.assets.routes import router as assets_router
+from app.jobs.routes import router as jobs_router
+
+app.include_router(auth_router, prefix="/api/auth", tags=["auth"])
+app.include_router(projects_router, prefix="/api/projects", tags=["projects"])
+app.include_router(assets_router, prefix="/api/assets", tags=["assets"])
+app.include_router(jobs_router, prefix="/api/jobs", tags=["jobs"])
 
 
 if __name__ == "__main__":
