@@ -78,6 +78,9 @@ ENV PORT=8000
 
 EXPOSE 8000 80 443
 
+# Build timestamp to force fresh build
+LABEL build.timestamp="2026-02-15"
+
 # Healthcheck
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=5 \
     CMD curl -f http://localhost:${PORT:-8000}/health || exit 1
